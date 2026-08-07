@@ -109,6 +109,18 @@ ${baseConstraints}
 `;
 
 const sessions = {};
+const sessionActivity = {};
+
+// Cleanup job to prevent memory leaks (runs every hour, removes sessions older than 2 hours)
+setInterval(() => {
+    const now = Date.now();
+    for (const id in sessionActivity) {
+        if (now - sessionActivity[id] > 2 * 60 * 60 * 1000) {
+            delete sessions[id];
+            delete sessionActivity[id];
+        }
+    }
+}, 60 * 60 * 1000);
 
 app.post('/api/chat', async (req, res) => {
     const { sessionId, message, difficulty } = req.body;
@@ -116,6 +128,9 @@ app.post('/api/chat', async (req, res) => {
     if (!sessions[sessionId]) {
         sessions[sessionId] = [];
     }
+    
+    // Update activity timestamp for garbage collection
+    sessionActivity[sessionId] = Date.now();
 
     try {
         let actualMessage = message;
@@ -138,6 +153,11 @@ app.post('/api/chat', async (req, res) => {
         // Hide the system prompt from the user in the UI, but save it in context
         sessions[sessionId].push({ role: 'user', parts: [{ text: message === "[ANALYZE_PATTERNS]" ? "אשמח לניתוח דפוסי התגובה שלי" : message }] });
         sessions[sessionId].push({ role: 'model', parts: [{ text: response.text }] });
+
+        // Keep only the last 20 messages to prevent massive context costs and timeouts
+        if (sessions[sessionId].length > 20) {
+            sessions[sessionId] = sessions[sessionId].slice(-20);
+        }
 
         res.json({ text: response.text });
     } catch (error) {
