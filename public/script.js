@@ -102,15 +102,36 @@ function renderScenariosList() {
     scenarios.forEach(s => {
         const card = document.createElement('div');
         card.className = 'scenario-card';
-        card.style.cssText = 'border:1px solid #E5E7EB; border-radius:12px; padding:12px; margin-bottom:10px;';
-        card.innerHTML = `
-            <p style="font-size:0.95rem; line-height:1.5; margin-bottom:10px; color:var(--text-main);">${s.text}</p>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button onclick="openPracticeView('${s.id}')" class="action-btn primary-btn" style="flex:1; padding:8px; font-size:0.9rem;">&#127939; תרגלי</button>
-                <button onclick="openEditScenario('${s.id}')" class="action-btn secondary-btn" style="padding:8px; font-size:0.9rem;">&#9998; ערכי</button>
-                <button onclick="deleteScenario('${s.id}')" class="action-btn secondary-btn" style="padding:8px; font-size:0.9rem; color:#EF4444; border-color:#EF4444;">&#128465;</button>
-            </div>
+        card.style.cssText = 'border-bottom:1px solid #E5E7EB; padding:0;';
+
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:12px 10px; cursor:pointer; font-size:0.95rem; line-height:1.4; color:var(--text-main); display:flex; justify-content:space-between; align-items:center;';
+        const preview = s.text.length > 60 ? s.text.substring(0, 60) + '...' : s.text;
+        
+        const actions = document.createElement('div');
+        actions.style.cssText = 'display:none; padding:0 10px 12px; gap:8px; flex-wrap:wrap;';
+        actions.innerHTML = `
+            <button onclick="openPracticeView('${s.id}')" class="action-btn primary-btn" style="padding:7px 14px; font-size:0.85rem;">&#127939; תרגלי</button>
+            <button onclick="openEditScenario('${s.id}')" class="action-btn secondary-btn" style="padding:7px 14px; font-size:0.85rem;">&#9998; ערכי</button>
+            <button onclick="deleteScenario('${s.id}')" class="action-btn secondary-btn" style="padding:7px 14px; font-size:0.85rem; color:#EF4444; border-color:#EF4444;">&#128465; מחקי</button>
         `;
+
+        row.addEventListener('click', () => {
+            const isOpen = actions.style.display === 'flex';
+            // Close all other open cards
+            document.querySelectorAll('.scenario-actions').forEach(a => a.style.display = 'none');
+            document.querySelectorAll('.scenario-arrow').forEach(a => a.textContent = '\\u203a');
+            if (!isOpen) {
+                actions.style.display = 'flex';
+                row.querySelector('.scenario-arrow').textContent = '\\u2039';
+            }
+        });
+
+        row.innerHTML = `<span style="flex:1;">${preview}</span><span class="scenario-arrow" style="color:var(--text-muted); font-size:1.3rem; margin-right:8px;">&#8250;</span>`;
+        actions.className = 'scenario-actions';
+
+        card.appendChild(row);
+        card.appendChild(actions);
         scenariosListContainer.appendChild(card);
     });
 }
