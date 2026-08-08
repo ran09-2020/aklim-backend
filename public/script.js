@@ -22,6 +22,12 @@ let isGenerating = false; // מונע שליחות כפולות ומרובות
 
 // Called by the difficulty buttons in welcome screen
 window.startSimulation = function(difficulty) {
+    chatBox.innerHTML = '';
+    sessionId = Math.random().toString(36).substring(2, 15);
+    completedSimulations = 0;
+    nextScenarioBtn.classList.add('hidden');
+    if (analyzeBtn) analyzeBtn.classList.add('hidden');
+    
     currentDifficulty = difficulty;
     welcomeScreen.classList.add('hidden');
     chatContainer.classList.remove('hidden');
@@ -182,6 +188,13 @@ window.deleteScenario = function(id) {
 window.startFromMyScenario = function(difficulty) {
     if (!practiceScenarioText) return;
     myScenariosModal.classList.add('hidden');
+    
+    chatBox.innerHTML = '';
+    sessionId = Math.random().toString(36).substring(2, 15);
+    completedSimulations = 0;
+    nextScenarioBtn.classList.add('hidden');
+    if (analyzeBtn) analyzeBtn.classList.add('hidden');
+
     currentDifficulty = difficulty;
     welcomeScreen.classList.add('hidden');
     chatContainer.classList.remove('hidden');
@@ -505,11 +518,11 @@ function addMessageToChat(text, sender) {
         });
         chatBox.appendChild(optionsDiv);
         inputArea.classList.add('hidden'); // Ensure text input is hidden
-    } else if (sender === 'model' && currentDifficulty === 'easy' && !text.includes("הסימולציה הסתיימה")) {
-        // Fallback: If the AI failed to generate options in easy mode, show the text box so they aren't stuck
-        inputArea.classList.remove('hidden');
-    } else if (sender === 'model' && currentDifficulty !== 'easy' && !text.includes("הסימולציה הסתיימה")) {
-        inputArea.classList.remove('hidden');
+    } else {
+        // If there are NO options, ALWAYS ensure the user can type, unless the simulation ended.
+        if (!text.includes("הסימולציה הסתיימה")) {
+            inputArea.classList.remove('hidden');
+        }
     }
 
     if (sender === 'user') {
