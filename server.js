@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -164,6 +166,70 @@ app.post('/api/chat', async (req, res) => {
         console.error("Gemini API Error:", error);
         res.status(500).json({ error: 'שגיאה בתקשורת מול השרת' });
     }
+});
+
+// ===== Scenarios API =====
+const SCENARIOS_FILE = path.join(__dirname, 'scenarios.json');
+
+function loadScenarios() {
+    if (!fs.existsSync(SCENARIOS_FILE)) return [];
+    try { return JSON.parse(fs.readFileSync(SCENARIOS_FILE, 'utf8')); }
+    catch(e) { return []; }
+}
+
+function saveScenarios(scenarios) {
+    fs.writeFileSync(SCENARIOS_FILE, JSON.stringify(scenarios, null, 2), 'utf8');
+}
+
+// Get all scenarios
+app.get('/api/scenarios', (req, res) => {
+    res.json(loadScenarios());
+});
+
+// Submit a new scenario
+app.post('/api/scenarios', (req, res) => {
+    const { text } = req.body;
+    if (!text || text.trim().length < 10) {
+        return res.status(400).json({ error: 'התרחיש קצר מדי' });
+    }
+    if (text.length > 300) {
+        return res.status(400).json({ error: 'התרחיש ארוך מדי' });
+    }
+    const scenarios = loadScenarios();
+    const newScenario = {
+        id: Date.now().toString(),
+        text: text.trim(),
+        createdAt: new Date().toISOString()
+    };
+    scenarios.push(newScenario);
+    saveScenarios(scenarios);
+    res.json({ success: true, scenario: newScenario });
+});
+
+// Admin: delete a scenario
+app.delete('/api/scenarios/:id', (req, res) => {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== process.env.ADMIN_KEY) {
+        return res.status(403).json({ error: 'אין הרשאה' });
+    }
+    const scenarios = loadScenarios().filter(s => s.id !== req.params.id);
+    saveScenarios(scenarios);
+    res.json({ success: true });
+});
+
+// Admin: edit a scenario
+app.put('/api/scenarios/:id', (req, res) => {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== process.env.ADMIN_KEY) {
+        return res.status(403).json({ error: 'אין הרשאה' });
+    }
+    const { text } = req.body;
+    const scenarios = loadScenarios();
+    const idx = scenarios.findIndex(s => s.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'לא נמצא' });
+    scenarios[idx].text = text.trim();
+    saveScenarios(scenarios);
+    res.json({ success: true });
 });
 
 app.listen(port, () => {
