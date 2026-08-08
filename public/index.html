@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>אימון כושר - מאמן סימולציות למורות</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=53">
+    <link rel="stylesheet" href="style.css?v=54">
 </head>
 <body>
     <div class="app-container">
@@ -15,7 +15,7 @@
                 <p>אימון ממוקד בסימולציות</p>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button id="add-scenario-btn" class="icon-btn" title="הוסיפי תרחיש מהשטח">
+                <button id="add-scenario-btn" class="icon-btn" title="התרחישים שלי">
                     <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
                 <button id="clear-btn" class="icon-btn" title="נקה שיחה (מטאטא)">
@@ -30,26 +30,50 @@
             </div>
         </header>
 
-        <!-- Submit Scenario Modal -->
-        <div id="submit-scenario-modal" class="modal hidden">
-            <div class="modal-content option-a-modal" style="padding: 30px 25px; max-width: 380px;">
-                <button id="close-submit-modal-btn" class="close-btn">&times;</button>
-                <div id="submit-form-view">
-                    <h3 style="color: var(--primary-color); font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; text-align: center;">&#128221; תרחיש מהשטח</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 18px; text-align: center;">תארי בקצרה סיטואציה אמיתית שקרתה לך בבית הספר</p>
-                    <textarea id="scenario-text-input" maxlength="300" placeholder="לדוגמה: תלמיד סירב לשבת ליד תלמיד אחר ואמר שהוא מסריח. שאר הכיתה צחקה..." style="width:100%; height: 120px; border: 1.5px solid #D1D5DB; border-radius: 12px; padding: 12px; font-family: Assistant, sans-serif; font-size: 1rem; resize: none; outline: none; transition: border-color 0.2s;"></textarea>
-                    <div id="char-counter" style="text-align: left; font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">0 / 300</div>
-                    <button id="submit-scenario-btn" class="action-btn primary-btn" style="width: 100%; margin-top: 15px;">שלחי תרחיש</button>
-                </div>
-                <div id="submit-success-view" class="hidden" style="text-align: center; padding: 10px 0;">
-                    <div style="font-size: 2.5rem; margin-bottom: 10px;">&#9989;</div>
-                    <h3 style="color: var(--primary-color); font-size: 1.3rem; margin-bottom: 8px;">התרחיש נשמר!</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px;">רוצה להתאמן עליו עכשיו?</p>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button id="practice-now-btn" class="action-btn primary-btn">כן, בואי נתחיל</button>
-                        <button id="practice-later-btn" class="action-btn secondary-btn">לא, אחר כך</button>
+        <!-- My Scenarios Modal -->
+        <div id="my-scenarios-modal" class="modal hidden">
+            <div class="modal-content option-a-modal">
+                <button id="close-scenarios-modal-btn" class="close-btn">&times;</button>
+
+                <!-- View 1: List -->
+                <div id="scenarios-list-view" class="tools-menu">
+                    <h3 class="tools-menu-title">&#128221; התרחישים שלי</h3>
+                    <button id="add-new-scenario-btn" class="action-btn primary-btn" style="width:100%; margin-bottom:15px;">הוסיפי תרחיש חדש +</button>
+                    <div id="scenarios-list-container">
+                        <p id="no-scenarios-msg" style="text-align:center; color:var(--text-muted); padding:20px 0;">אין עדיין תרחישים שמורים.<br>לחצי על "הוסיפי תרחיש חדש" כדי להתחיל.</p>
                     </div>
                 </div>
+
+                <!-- View 2: Add / Edit form -->
+                <div id="scenario-form-view" class="hidden tool-detail">
+                    <button id="back-to-list-btn" class="back-btn">&#8594; חזרי לרשימה</button>
+                    <h4 id="scenario-form-title" class="tool-title">תרחיש חדש</h4>
+                    <textarea id="scenario-text-input" maxlength="300" placeholder="לדוגמה: תלמיד סירב לשבת ליד תלמיד אחר ואמר שהוא מסריח. שאר הכיתה צחקה..." style="width:100%; height:130px; border:1.5px solid #D1D5DB; border-radius:12px; padding:12px; font-family:Assistant,sans-serif; font-size:1rem; resize:none; outline:none; transition:border-color 0.2s; margin-bottom:5px;"></textarea>
+                    <div id="char-counter" style="text-align:left; font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">0 / 300</div>
+                    <button id="save-scenario-btn" class="action-btn primary-btn" style="width:100%;">שמור</button>
+                </div>
+
+                <!-- View 3: Choose difficulty -->
+                <div id="scenario-practice-view" class="hidden tool-detail">
+                    <button id="back-to-list-btn2" class="back-btn">&#8594; חזרי לרשימה</button>
+                    <h4 class="tool-title">בחרי מסלול</h4>
+                    <p id="practice-scenario-preview" style="background:#EEF2FF; border-radius:10px; padding:12px; font-size:0.95rem; line-height:1.5; margin-bottom:20px; color:var(--text-main);"></p>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button onclick="startFromMyScenario('easy')" class="action-btn" style="background:#10B981; color:white; display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px; border-radius:12px;">
+                            <span style="font-weight:800; font-size:1.1rem;">מסלול קל</span>
+                            <span style="font-size:0.85rem; opacity:0.9;">כפתורי בחירה, ללא הקלדה</span>
+                        </button>
+                        <button onclick="startFromMyScenario('medium')" class="action-btn" style="background:#F59E0B; color:white; display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px; border-radius:12px;">
+                            <span style="font-weight:800; font-size:1.1rem;">מסלול בינוני</span>
+                            <span style="font-size:0.85rem; opacity:0.9;">הקלדה חופשית + התפתחויות</span>
+                        </button>
+                        <button onclick="startFromMyScenario('hard')" class="action-btn" style="background:#EF4444; color:white; display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px; border-radius:12px;">
+                            <span style="font-weight:800; font-size:1.1rem;">מסלול מאתגר</span>
+                            <span style="font-size:0.85rem; opacity:0.9;">משחק תפקידים חי</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -135,6 +159,6 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=53"></script>
+    <script src="script.js?v=54"></script>
 </body>
 </html>

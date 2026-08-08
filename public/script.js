@@ -14,15 +14,6 @@ const creditBtn = document.getElementById('credit-btn');
 const creditModal = document.getElementById('credit-modal');
 const closeCreditBtn = document.getElementById('close-credit-btn');
 const addScenarioBtn = document.getElementById('add-scenario-btn');
-const submitScenarioModal = document.getElementById('submit-scenario-modal');
-const closeSubmitModalBtn = document.getElementById('close-submit-modal-btn');
-const scenarioTextInput = document.getElementById('scenario-text-input');
-const charCounter = document.getElementById('char-counter');
-const submitScenarioBtn = document.getElementById('submit-scenario-btn');
-const submitFormView = document.getElementById('submit-form-view');
-const submitSuccessView = document.getElementById('submit-success-view');
-const practiceNowBtn = document.getElementById('practice-now-btn');
-const practiceLaterBtn = document.getElementById('practice-later-btn');
 
 let completedSimulations = 0;
 let sessionId = Math.random().toString(36).substring(2, 15);
@@ -69,80 +60,107 @@ if (infoBtn) {
     });
 }
 
-// ===== Scenario Submission =====
-let lastSubmittedScenario = null;
+// ===== My Scenarios (localStorage) =====
+const myScenariosModal = document.getElementById('my-scenarios-modal');
+const closeScenariosModalBtn = document.getElementById('close-scenarios-modal-btn');
+const scenariosListView = document.getElementById('scenarios-list-view');
+const scenarioFormView = document.getElementById('scenario-form-view');
+const scenarioPracticeView = document.getElementById('scenario-practice-view');
+const addNewScenarioBtn = document.getElementById('add-new-scenario-btn');
+const backToListBtn = document.getElementById('back-to-list-btn');
+const backToListBtn2 = document.getElementById('back-to-list-btn2');
+const scenarioFormTitle = document.getElementById('scenario-form-title');
+const scenarioTextInput = document.getElementById('scenario-text-input');
+const charCounter = document.getElementById('char-counter');
+const saveScenarioBtn = document.getElementById('save-scenario-btn');
+const scenariosListContainer = document.getElementById('scenarios-list-container');
+const noScenariosMsg = document.getElementById('no-scenarios-msg');
+const practiceScenarioPreview = document.getElementById('practice-scenario-preview');
 
-if (addScenarioBtn) {
-    addScenarioBtn.addEventListener('click', () => {
-        // Reset modal state
-        submitFormView.classList.remove('hidden');
-        submitSuccessView.classList.add('hidden');
-        scenarioTextInput.value = '';
-        charCounter.textContent = '0 / 300';
-        submitScenarioModal.classList.remove('hidden');
+let editingScenarioId = null;
+let practiceScenarioText = null;
+
+function loadMyScenarios() {
+    return JSON.parse(localStorage.getItem('myScenarios') || '[]');
+}
+
+function saveMyScenarios(scenarios) {
+    localStorage.setItem('myScenarios', JSON.stringify(scenarios));
+}
+
+function renderScenariosList() {
+    const scenarios = loadMyScenarios();
+    const existing = scenariosListContainer.querySelectorAll('.scenario-card');
+    existing.forEach(el => el.remove());
+
+    if (scenarios.length === 0) {
+        noScenariosMsg.classList.remove('hidden');
+        return;
+    }
+    noScenariosMsg.classList.add('hidden');
+
+    scenarios.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'scenario-card';
+        card.style.cssText = 'border:1px solid #E5E7EB; border-radius:12px; padding:12px; margin-bottom:10px;';
+        card.innerHTML = `
+            <p style="font-size:0.95rem; line-height:1.5; margin-bottom:10px; color:var(--text-main);">${s.text}</p>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="openPracticeView('${s.id}')" class="action-btn primary-btn" style="flex:1; padding:8px; font-size:0.9rem;">&#127939; תרגלי</button>
+                <button onclick="openEditScenario('${s.id}')" class="action-btn secondary-btn" style="padding:8px; font-size:0.9rem;">&#9998; ערכי</button>
+                <button onclick="deleteScenario('${s.id}')" class="action-btn secondary-btn" style="padding:8px; font-size:0.9rem; color:#EF4444; border-color:#EF4444;">&#128465;</button>
+            </div>
+        `;
+        scenariosListContainer.appendChild(card);
     });
 }
 
-if (closeSubmitModalBtn) {
-    closeSubmitModalBtn.addEventListener('click', () => {
-        submitScenarioModal.classList.add('hidden');
-    });
+function showListView() {
+    scenariosListView.classList.remove('hidden');
+    scenarioFormView.classList.add('hidden');
+    scenarioPracticeView.classList.add('hidden');
+    renderScenariosList();
 }
 
-if (scenarioTextInput) {
-    scenarioTextInput.addEventListener('input', () => {
-        const len = scenarioTextInput.value.length;
-        charCounter.textContent = `${len} / 300`;
-        charCounter.style.color = len > 270 ? '#EF4444' : 'var(--text-muted)';
-        scenarioTextInput.style.borderColor = len > 0 ? 'var(--primary-color)' : '#D1D5DB';
-    });
+function showFormView(title, text) {
+    scenariosListView.classList.add('hidden');
+    scenarioFormView.classList.remove('hidden');
+    scenarioPracticeView.classList.add('hidden');
+    scenarioFormTitle.textContent = title;
+    scenarioTextInput.value = text || '';
+    charCounter.textContent = `${(text||'').length} / 300`;
+    scenarioTextInput.style.borderColor = '#D1D5DB';
 }
 
-if (submitScenarioBtn) {
-    submitScenarioBtn.addEventListener('click', async () => {
-        const text = scenarioTextInput.value.trim();
-        if (text.length < 10) {
-            scenarioTextInput.style.borderColor = '#EF4444';
-            return;
-        }
-        submitScenarioBtn.disabled = true;
-        submitScenarioBtn.textContent = 'שומרת...';
-        try {
-            const res = await fetch('/api/scenarios', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-            const data = await res.json();
-            if (data.success) {
-                lastSubmittedScenario = data.scenario;
-                submitFormView.classList.add('hidden');
-                submitSuccessView.classList.remove('hidden');
-            }
-        } catch(e) {
-            alert('שגיאה בשמירת התרחיש. נסי שוב.');
-        }
-        submitScenarioBtn.disabled = false;
-        submitScenarioBtn.textContent = 'שלחי תרחיש';
-    });
-}
+window.openPracticeView = function(id) {
+    const scenarios = loadMyScenarios();
+    const s = scenarios.find(x => x.id === id);
+    if (!s) return;
+    practiceScenarioText = s.text;
+    practiceScenarioPreview.textContent = s.text;
+    scenariosListView.classList.add('hidden');
+    scenarioFormView.classList.add('hidden');
+    scenarioPracticeView.classList.remove('hidden');
+};
 
-if (practiceNowBtn) {
-    practiceNowBtn.addEventListener('click', () => {
-        submitScenarioModal.classList.add('hidden');
-        if (lastSubmittedScenario) {
-            startSimulationOnScenario(lastSubmittedScenario.text, 'medium');
-        }
-    });
-}
+window.openEditScenario = function(id) {
+    const scenarios = loadMyScenarios();
+    const s = scenarios.find(x => x.id === id);
+    if (!s) return;
+    editingScenarioId = id;
+    showFormView('עריכת תרחיש', s.text);
+};
 
-if (practiceLaterBtn) {
-    practiceLaterBtn.addEventListener('click', () => {
-        submitScenarioModal.classList.add('hidden');
-    });
-}
+window.deleteScenario = function(id) {
+    if (!confirm('למחוק את התרחיש?')) return;
+    const scenarios = loadMyScenarios().filter(s => s.id !== id);
+    saveMyScenarios(scenarios);
+    renderScenariosList();
+};
 
-window.startSimulationOnScenario = function(scenarioText, difficulty) {
+window.startFromMyScenario = function(difficulty) {
+    if (!practiceScenarioText) return;
+    myScenariosModal.classList.add('hidden');
     currentDifficulty = difficulty;
     welcomeScreen.classList.add('hidden');
     chatContainer.classList.remove('hidden');
@@ -151,8 +169,62 @@ window.startSimulationOnScenario = function(scenarioText, difficulty) {
     } else {
         inputArea.classList.remove('hidden');
     }
-    sendMessage(`התחל סימולציה על בסיס התרחיש הבא: ${scenarioText}`);
+    sendMessage(`התחל סימולציה על בסיס התרחיש הבא: ${practiceScenarioText}`);
 };
+
+if (addScenarioBtn) {
+    addScenarioBtn.addEventListener('click', () => {
+        editingScenarioId = null;
+        showListView();
+        myScenariosModal.classList.remove('hidden');
+    });
+}
+
+if (closeScenariosModalBtn) {
+    closeScenariosModalBtn.addEventListener('click', () => {
+        myScenariosModal.classList.add('hidden');
+    });
+}
+
+if (addNewScenarioBtn) {
+    addNewScenarioBtn.addEventListener('click', () => {
+        editingScenarioId = null;
+        showFormView('תרחיש חדש', '');
+    });
+}
+
+if (backToListBtn) backToListBtn.addEventListener('click', showListView);
+if (backToListBtn2) backToListBtn2.addEventListener('click', showListView);
+
+if (scenarioTextInput) {
+    scenarioTextInput.addEventListener('input', () => {
+        const len = scenarioTextInput.value.length;
+        charCounter.textContent = `${len} / 300`;
+        charCounter.style.color = len > 270 ? '#EF4444' : 'var(--text-muted)';
+        scenarioTextInput.style.borderColor = 'var(--primary-color)';
+    });
+}
+
+if (saveScenarioBtn) {
+    saveScenarioBtn.addEventListener('click', () => {
+        const text = scenarioTextInput.value.trim();
+        if (text.length < 10) {
+            scenarioTextInput.style.borderColor = '#EF4444';
+            return;
+        }
+        const scenarios = loadMyScenarios();
+        if (editingScenarioId) {
+            const idx = scenarios.findIndex(s => s.id === editingScenarioId);
+            if (idx !== -1) scenarios[idx].text = text;
+        } else {
+            scenarios.push({ id: Date.now().toString(), text });
+        }
+        saveMyScenarios(scenarios);
+        editingScenarioId = null;
+        showListView();
+    });
+}
+
 
 if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
