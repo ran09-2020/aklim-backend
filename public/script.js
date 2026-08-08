@@ -13,6 +13,16 @@ const closeModalBtn = document.getElementById('close-modal-btn');
 const creditBtn = document.getElementById('credit-btn');
 const creditModal = document.getElementById('credit-modal');
 const closeCreditBtn = document.getElementById('close-credit-btn');
+const addScenarioBtn = document.getElementById('add-scenario-btn');
+const submitScenarioModal = document.getElementById('submit-scenario-modal');
+const closeSubmitModalBtn = document.getElementById('close-submit-modal-btn');
+const scenarioTextInput = document.getElementById('scenario-text-input');
+const charCounter = document.getElementById('char-counter');
+const submitScenarioBtn = document.getElementById('submit-scenario-btn');
+const submitFormView = document.getElementById('submit-form-view');
+const submitSuccessView = document.getElementById('submit-success-view');
+const practiceNowBtn = document.getElementById('practice-now-btn');
+const practiceLaterBtn = document.getElementById('practice-later-btn');
 
 let completedSimulations = 0;
 let sessionId = Math.random().toString(36).substring(2, 15);
@@ -58,6 +68,91 @@ if (infoBtn) {
         toolsModal.classList.remove('hidden');
     });
 }
+
+// ===== Scenario Submission =====
+let lastSubmittedScenario = null;
+
+if (addScenarioBtn) {
+    addScenarioBtn.addEventListener('click', () => {
+        // Reset modal state
+        submitFormView.classList.remove('hidden');
+        submitSuccessView.classList.add('hidden');
+        scenarioTextInput.value = '';
+        charCounter.textContent = '0 / 300';
+        submitScenarioModal.classList.remove('hidden');
+    });
+}
+
+if (closeSubmitModalBtn) {
+    closeSubmitModalBtn.addEventListener('click', () => {
+        submitScenarioModal.classList.add('hidden');
+    });
+}
+
+if (scenarioTextInput) {
+    scenarioTextInput.addEventListener('input', () => {
+        const len = scenarioTextInput.value.length;
+        charCounter.textContent = `${len} / 300`;
+        charCounter.style.color = len > 270 ? '#EF4444' : 'var(--text-muted)';
+        scenarioTextInput.style.borderColor = len > 0 ? 'var(--primary-color)' : '#D1D5DB';
+    });
+}
+
+if (submitScenarioBtn) {
+    submitScenarioBtn.addEventListener('click', async () => {
+        const text = scenarioTextInput.value.trim();
+        if (text.length < 10) {
+            scenarioTextInput.style.borderColor = '#EF4444';
+            return;
+        }
+        submitScenarioBtn.disabled = true;
+        submitScenarioBtn.textContent = 'שומרת...';
+        try {
+            const res = await fetch('/api/scenarios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await res.json();
+            if (data.success) {
+                lastSubmittedScenario = data.scenario;
+                submitFormView.classList.add('hidden');
+                submitSuccessView.classList.remove('hidden');
+            }
+        } catch(e) {
+            alert('שגיאה בשמירת התרחיש. נסי שוב.');
+        }
+        submitScenarioBtn.disabled = false;
+        submitScenarioBtn.textContent = 'שלחי תרחיש';
+    });
+}
+
+if (practiceNowBtn) {
+    practiceNowBtn.addEventListener('click', () => {
+        submitScenarioModal.classList.add('hidden');
+        if (lastSubmittedScenario) {
+            startSimulationOnScenario(lastSubmittedScenario.text, 'medium');
+        }
+    });
+}
+
+if (practiceLaterBtn) {
+    practiceLaterBtn.addEventListener('click', () => {
+        submitScenarioModal.classList.add('hidden');
+    });
+}
+
+window.startSimulationOnScenario = function(scenarioText, difficulty) {
+    currentDifficulty = difficulty;
+    welcomeScreen.classList.add('hidden');
+    chatContainer.classList.remove('hidden');
+    if (difficulty === 'easy') {
+        inputArea.classList.add('hidden');
+    } else {
+        inputArea.classList.remove('hidden');
+    }
+    sendMessage(`התחל סימולציה על בסיס התרחיש הבא: ${scenarioText}`);
+};
 
 if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
